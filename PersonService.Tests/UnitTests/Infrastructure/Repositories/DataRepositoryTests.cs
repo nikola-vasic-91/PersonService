@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PersonService.Domain.Models;
 using PersonService.Infrastructure.Contexts;
 using PersonService.Infrastructure.Repositories;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.Tests.UnitTests.Infrastructure.Repositories
 {
@@ -75,6 +76,18 @@ namespace PersonService.Tests.UnitTests.Infrastructure.Repositories
             //Act
             //Assert
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await _repository.AddAsync(default(SocialMediaAccount)));
+        }
+
+        [Fact]
+        public async Task AddAsync_DatabaseFail_OperationFailedException()
+        {
+            //Arrange
+            Guid id = Guid.NewGuid();
+
+            //Act
+            //Assert
+            await _repository.AddAsync(new SocialMediaAccount { SocialMediaAccountId = id });
+            await Assert.ThrowsAsync<OperationFailedException>(async () => await _repository.AddAsync(new SocialMediaAccount { SocialMediaAccountId = id }));
         }
 
         [Fact]

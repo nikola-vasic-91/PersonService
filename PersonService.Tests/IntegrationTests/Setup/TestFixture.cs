@@ -14,6 +14,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
+using PersonService.Domain.Options;
+using Microsoft.Extensions.Options;
+using PersonService.API.Helpers;
 
 namespace PersonService.Tests.IntegrationTests.Setup
 {
@@ -46,17 +49,21 @@ namespace PersonService.Tests.IntegrationTests.Setup
                 .AddJsonFile("appsettings.json")
                 .Build();
 
+            var dbConnectionString = string.Empty;
+
             var application = new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
                     builder.ConfigureServices(services =>
                     {
+                        services.Configure<DatabaseOptions>(config.GetSection(nameof(DatabaseOptions)));
+                        services.Configure<ServiceUrls>(config.GetSection(nameof(ServiceUrls)));
                         services.AddScoped(typeof(IDataRepository<>), typeof(DataRepository<>));
                         services.AddScoped(typeof(IDataRepository<Person>), typeof(PersonRepository));
                         services.AddScoped<IValidator<PersonDto>, PersonValidator>();
-                        services.AddDbContext<PersonDbContext>(options =>
+                        services.AddDbContext<PersonDbContext>((serviceProvider, options) =>
                                        options.UseSqlServer(
-                                            new SqlConnection(config["PersonDbConnectionString"])));
+                                            new SqlConnection(serviceProvider.GetService<IOptions<DatabaseOptions>>()?.Value?.ConnectionString)));
 
                         services.RegisterMediatR();
 
@@ -67,12 +74,19 @@ namespace PersonService.Tests.IntegrationTests.Setup
 
                         IMapper mapper = mapperConfig.CreateMapper();
                         services.AddSingleton(mapper);
+
+                        services.AddMvc(options =>
+                        {
+                            options.Filters.Add<OperationCancelledExceptionFilter>();
+                        });
+
+                        dbConnectionString = services.BuildServiceProvider().GetService<IOptions<DatabaseOptions>>()?.Value?.ConnectionString;
                     });
                 });
 
             Client = application.CreateClient();
 
-            _dbContext = new PersonDbContext(new DbContextOptionsBuilder().UseSqlServer(config["PersonDbConnectionString"]).Options);
+            _dbContext = new PersonDbContext(new DbContextOptionsBuilder().UseSqlServer(dbConnectionString).Options);
         }
 
         #endregion

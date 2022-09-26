@@ -49,23 +49,33 @@ namespace PersonService.Service.Commands
         /// <returns>Id of the added person</returns>
         public async Task<Guid> Handle(AddPerson request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            try
             {
-                _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)}] Request with type {nameof(AddPerson)} is null.");
-                throw new ArgumentNullException(nameof(request));
+                if (request == null)
+                {
+                    _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)}] Request with type {nameof(AddPerson)} is null.");
+                    throw new ArgumentNullException(nameof(request));
+                }
+
+                await AddNewSocialMediaAccountAsync(request);
+
+                _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] Adding a new person to the database...");
+
+                var retVal = await _repository.AddAsync(request.Person, cancellationToken);
+
+                await _repository.SaveChangesAsync(cancellationToken);
+
+                _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] Database operations were successfully completed.");
+
+                return retVal.PersonId;
             }
-
-            await AddNewSocialMediaAccountAsync(request);
-
-            _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] Adding a new person to the database...");
-
-            var retVal = await _repository.AddAsync(request.Person);
-
-            await _repository.SaveChangesAsync();
-
-            _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] Database operations were successfully completed.");
-
-            return retVal.PersonId;
+            catch (Exception)
+            {
+                _logger.LogError($"[{nameof(AddPersonHandler)}][{nameof(Handle)}" +
+                    $"{(request != null ? $"| {request.CorrelationId}" : string.Empty)}" +
+                    $"] An error occurred while handling {nameof(AddPerson)} request.");
+                throw;
+            }
         }
 
         #endregion

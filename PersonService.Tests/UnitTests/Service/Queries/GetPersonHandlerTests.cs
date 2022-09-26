@@ -26,7 +26,7 @@ namespace PersonService.Tests.UnitTests.Service.Queries
             _logger = logMock.Object;
 
             var repositoryMock = new Mock<IDataRepository<Person>>();
-            repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Person());
             _repository = repositoryMock.Object;
 
@@ -54,7 +54,7 @@ namespace PersonService.Tests.UnitTests.Service.Queries
         {
             //Arrange
             var repositoryMock = new Mock<IDataRepository<Person>>();
-            repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception());
 
             _handler = new GetPersonHandler(repositoryMock.Object, _logger);

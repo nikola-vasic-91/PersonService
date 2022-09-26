@@ -9,6 +9,7 @@ using PersonService.Domain.DtoModels;
 using PersonService.Domain.Models;
 using PersonService.Domain.Modules;
 using PersonService.Domain.Queries;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.Tests.UnitTests.API
 {
@@ -69,7 +70,7 @@ namespace PersonService.Tests.UnitTests.API
             // Arrange
             var mediatorMock = new Mock<IMediator>();
             mediatorMock.Setup(x => x.Send(It.IsAny<GetSocialMediaAccounts>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception());
+                .ThrowsAsync(new OperationFailedException());
             _controller = new SocialMediaAccountsController(mediatorMock.Object, _mapper, _logger);
 
             // Act

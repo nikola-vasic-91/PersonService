@@ -5,6 +5,7 @@ using PersonService.Domain.Commands;
 using PersonService.Domain.Interfaces;
 using PersonService.Domain.Models;
 using PersonService.Service.Commands;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.Tests.UnitTests.Service.Commands
 {
@@ -28,7 +29,7 @@ namespace PersonService.Tests.UnitTests.Service.Commands
             _logger = logMock.Object;
 
             var repositoryMock = new Mock<IDataRepository<SocialMediaAccount>>();
-            repositoryMock.Setup(x => x.AddAsync(It.IsAny<SocialMediaAccount>()))
+            repositoryMock.Setup(x => x.AddAsync(It.IsAny<SocialMediaAccount>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SocialMediaAccount { SocialMediaAccountId = Guid.Parse(AddSocialMediaAccountSuccessId) });
             _repository = repositoryMock.Object;
 
@@ -64,14 +65,14 @@ namespace PersonService.Tests.UnitTests.Service.Commands
         public async Task Handle_RepositoryFail_Exception()
         {
             var repositoryMock = new Mock<IDataRepository<SocialMediaAccount>>();
-            repositoryMock.Setup(x => x.AddAsync(It.IsAny<SocialMediaAccount>()))
-                .ThrowsAsync(new Exception());
+            repositoryMock.Setup(x => x.AddAsync(It.IsAny<SocialMediaAccount>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new OperationFailedException());
 
             _handler = new AddSocialMediaAccountHandler(repositoryMock.Object, _logger);
 
             //Act
             //Assert
-            await Assert.ThrowsAsync<Exception>(async () => await _handler.Handle(GetAddSocialMediaAccount(), new CancellationToken()));
+            await Assert.ThrowsAsync<OperationFailedException>(async () => await _handler.Handle(GetAddSocialMediaAccount(), new CancellationToken()));
         }
 
         #endregion

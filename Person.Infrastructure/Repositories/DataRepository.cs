@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PersonService.Domain.Exceptions;
 using PersonService.Domain.Interfaces;
 using PersonService.Infrastructure.Contexts;
+using System.Reflection.Metadata;
+using System.Threading;
 
 namespace PersonService.Infrastructure.Repositories
 {
@@ -39,46 +42,79 @@ namespace PersonService.Infrastructure.Repositories
         /// Executes an operation for adding a new entity for the provided type
         /// </summary>
         /// <param name="entity">Entity that should be added to database</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Added entity data</returns>
         /// <exception cref="ArgumentNullException">Thrown if entity is null</exception>
         public virtual async Task<T> AddAsync(
-            T entity)
+            T entity,
+            CancellationToken cancellationToken = default)
         {
-            if (entity == null)
+            try
             {
-                throw new ArgumentNullException(nameof(entity));
+                if (entity == null)
+                {
+                    throw new ArgumentNullException(nameof(entity));
+                }
+
+                await _dbSet.AddAsync(entity, cancellationToken);
+
+                return entity;
             }
-
-            await _dbSet.AddAsync(entity);
-
-            return entity;
+            catch (Exception ex) when (ex is not ArgumentNullException)
+            {
+                throw new OperationFailedException($"[{nameof(DataRepository<T>)}][{nameof(AddAsync)}] An error occurred on adding entity of type {typeof(T)}.", ex);
+            }
         }
 
         /// <summary>
         /// Executes operation for getting the concrete entity for the provided type
         /// </summary>
         /// <param name="entityId">Id of the entity</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Entity for the provided id</returns>
-        public virtual async Task<T> GetByIdAsync(Guid entityId)
+        public virtual async Task<T> GetByIdAsync(Guid entityId, CancellationToken cancellationToken = default)
         {
-            return await _dbSet.FindAsync(entityId);
+            try
+            {
+                return await _dbSet.FindAsync(new object[] { entityId }, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException($"[{nameof(DataRepository<T>)}][{nameof(GetByIdAsync)}] An error occurred on getting entity of type {typeof(T)} with id: {entityId}.", ex);
+            }
         }
 
         /// <summary>
         /// Executes get operation for provided entity type
         /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>All items for the desired entity type</returns>
-        public virtual async Task<IList<T>> GetAsync()
+        public virtual async Task<IList<T>> GetAsync(CancellationToken cancellationToken = default)
         {
-            return await _dbSet.ToListAsync();
+            try
+            {
+                return await _dbSet.ToListAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException($"[{nameof(DataRepository<T>)}][{nameof(GetAsync)}] An error occurred on getting entities of type {typeof(T)}.", ex);
+            }
         }
 
         /// <summary>
         /// Executes save changes operation on the database
         /// </summary>
-        public async Task SaveChangesAsync()
+        /// <param name="cancellationToken">Cancellation token</param>
+        public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException($"[{nameof(DataRepository<T>)}][{nameof(SaveChangesAsync)}] An error occurred on saving database changes.", ex);
+            }
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using PersonService.Domain.Commands;
+using PersonService.Domain.Exceptions;
 using PersonService.Domain.Interfaces;
 using PersonService.Domain.Models;
 
@@ -45,17 +46,27 @@ namespace PersonService.Service.Commands
         /// <returns>Id of the added social media account</returns>
         public async Task<Guid> Handle(AddSocialMediaAccount request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            try
             {
-                _logger.LogError($"[{nameof(AddSocialMediaAccountHandler)}][{nameof(Handle)}] Request with type {nameof(AddSocialMediaAccount)} is null.");
-                throw new ArgumentNullException(nameof(request));
+                if (request == null)
+                {
+                    _logger.LogError($"[{nameof(AddSocialMediaAccountHandler)}][{nameof(Handle)}] Request with type {nameof(AddSocialMediaAccount)} is null.");
+                    throw new ArgumentNullException(nameof(request));
+                }
+
+                _logger.LogError($"[{nameof(AddSocialMediaAccountHandler)}][{nameof(Handle)} | {request.CorrelationId}] Adding a new social media account to the database...");
+
+                var result = await _repository.AddAsync(request.SocialMediaAccount, cancellationToken);
+
+                return result.SocialMediaAccountId;
             }
-
-            _logger.LogError($"[{nameof(AddSocialMediaAccountHandler)}][{nameof(Handle)} | {request.CorrelationId}] Adding a new social media account to the database...");
-
-            var result = await _repository.AddAsync(request.SocialMediaAccount);
-
-            return result.SocialMediaAccountId;
+            catch (Exception)
+            {
+                _logger.LogError($"[{nameof(AddSocialMediaAccountHandler)}][{nameof(Handle)}" +
+                    $"{(request != null ? $"| {request.CorrelationId}" : string.Empty)}" +
+                    $"] An error occurred while handling {nameof(AddSocialMediaAccount)} request.");
+                throw;
+            } 
         }
 
         #endregion

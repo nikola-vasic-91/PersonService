@@ -62,6 +62,10 @@ builder.Services.AddCors(options =>
                       });
 });
 
+builder.Services.AddMvc(options =>
+{
+    options.Filters.Add<OperationCancelledExceptionFilter>();
+});
 
 var app = builder.Build();
 

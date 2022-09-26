@@ -49,11 +49,13 @@ namespace PersonService.Service.Queries
             {
                 _logger.LogInformation($"[{nameof(GetSocialMediaAccountsHandler)}][{nameof(Handle)} | {request.CorrelationId}] Initiating database operation for {nameof(GetSocialMediaAccounts)} command...");
 
-                return await _repository.GetAsync();
+                return await _repository.GetAsync(cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError($"[{nameof(GetSocialMediaAccountsHandler)}][{nameof(Handle)} | {request.CorrelationId}] An error occurred while handling {nameof(GetSocialMediaAccounts)} request.");
+                _logger.LogError($"[{nameof(GetSocialMediaAccountsHandler)}][{nameof(Handle)}" +
+                    $"{(request != null ? $"| {request.CorrelationId}" : string.Empty)}" +
+                    $"] An error occurred while handling {nameof(GetSocialMediaAccounts)} request.");
                 throw;
             }
         }

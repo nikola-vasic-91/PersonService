@@ -11,6 +11,7 @@ using PersonService.Domain.Models;
 using PersonService.Domain.Modules;
 using PersonService.Domain.Queries;
 using PersonService.Domain.Validators;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.Tests.UnitTests.API
 {
@@ -86,7 +87,7 @@ namespace PersonService.Tests.UnitTests.API
             // Arrange
             var mediatorMock = new Mock<IMediator>();
             mediatorMock.Setup(x => x.Send(It.IsAny<AddPerson>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception());
+                .ThrowsAsync(new OperationFailedException());
             _controller = new PersonsController(mediatorMock.Object, _mapper, _logger, _validator);
 
             var person = GetPersonDto();
@@ -138,7 +139,7 @@ namespace PersonService.Tests.UnitTests.API
             // Arrange
             var mediatorMock = new Mock<IMediator>();
             mediatorMock.Setup(x => x.Send(It.IsAny<GetPersons>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception());
+                .ThrowsAsync(new OperationFailedException());
             _controller = new PersonsController(mediatorMock.Object, _mapper, _logger, _validator);
 
             // Act

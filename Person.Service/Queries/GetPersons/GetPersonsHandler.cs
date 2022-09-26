@@ -1,6 +1,5 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using PersonService.Domain.Commands;
 using PersonService.Domain.Interfaces;
 using PersonService.Domain.Models;
 using PersonService.Domain.Queries;
@@ -50,11 +49,13 @@ namespace PersonService.Service.Queries
             {
                 _logger.LogInformation($"[{nameof(GetPersonsHandler)}][{nameof(Handle)} | {request.CorrelationId}] Initiating database operation for {nameof(GetPersons)} command...");
 
-                return await _repository.GetAsync();
+                return await _repository.GetAsync(cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError($"[{nameof(GetPersonsHandler)}][{nameof(Handle)} | {request.CorrelationId}] An error occurred while handling {nameof(GetPersons)} request.");
+                _logger.LogError($"[{nameof(GetPersonsHandler)}][{nameof(Handle)}" +
+                    $"{(request != null ? $"| {request.CorrelationId}" : string.Empty)}" +
+                    $"] An error occurred while handling {nameof(GetPersons)} request.");
                 throw;
             }
         }

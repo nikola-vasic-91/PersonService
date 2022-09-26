@@ -7,9 +7,9 @@ using PersonService.Domain.Queries;
 using PersonService.Domain.Commands;
 using static PersonService.API.Constants.RouteConstants;
 using static PersonService.API.Helpers.RequestHeaderHelper;
-using System;
 using FluentValidation.Results;
 using FluentValidation;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.API.Controllers
 {
@@ -73,13 +73,14 @@ namespace PersonService.API.Controllers
         /// Adding a new person
         /// </summary>
         /// <param name="personData">Person data to be added</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Id of the newly added person</returns>
         [HttpPost]
         [Produces("application/json")]
         [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<Guid>> AddPersonAsync([FromBody] PersonDto personData)
+        public async Task<ActionResult<Guid>> AddPersonAsync([FromBody] PersonDto personData, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -94,13 +95,13 @@ namespace PersonService.API.Controllers
                 _logger.LogInformation($"[{nameof(PersonsController)}][{nameof(AddPersonAsync)} | {CorrelationId}] Initiating {nameof(AddPerson)} command...");
 
                 var personId = await _mediator.Send(new AddPerson(CorrelationId,
-                    _mapper.Map<PersonDto, Person>(personData)));
+                    _mapper.Map<PersonDto, Person>(personData)), cancellationToken);
 
                 _logger.LogInformation($"[{nameof(PersonsController)}][{nameof(AddPersonAsync)} | {CorrelationId}] {nameof(AddPerson)} command was successfully executed for person with id: {personId}");
 
                 return Ok(personId);
             }
-            catch (Exception ex)
+            catch (OperationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(PersonsController)}][{nameof(AddPersonAsync)} | {CorrelationId}] An error occurred.");
                 return StatusCode(StatusCodes.Status500InternalServerError);
@@ -110,18 +111,19 @@ namespace PersonService.API.Controllers
         /// <summary>
         /// Retrieving all person entities
         /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Collection of all person entities</returns>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<PersonDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<IEnumerable<PersonDto>>> GetPersonsAsync()
+        public async Task<ActionResult<IEnumerable<PersonDto>>> GetPersonsAsync(CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation($"[{nameof(PersonsController)}][{nameof(GetPersonsAsync)} | {CorrelationId}] Initiating {nameof(GetPersons)} command...");
-
-                var personList = await _mediator.Send(new GetPersons(CorrelationId));
+                
+                var personList = await _mediator.Send(new GetPersons(CorrelationId), cancellationToken);
 
                 if (!personList?.Any() ?? true
                 )
@@ -136,7 +138,7 @@ namespace PersonService.API.Controllers
 
                 return Ok(retVal);
             }
-            catch (Exception ex)
+            catch (OperationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(PersonsController)}][{nameof(GetPersonsAsync)} | {CorrelationId}] An error occurred.");
                 return StatusCode(StatusCodes.Status500InternalServerError);
@@ -147,18 +149,19 @@ namespace PersonService.API.Controllers
         /// Getting the concrete person for the provided id
         /// </summary>
         /// <param name="personId">Person id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Person entity for the provided id</returns>
         [HttpGet(PersonIdEndpoint)]
         [ProducesResponseType(typeof(PersonDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<PersonDto>> GetPersonByIdAsync([FromRoute] Guid personId)
+        public async Task<ActionResult<PersonDto>> GetPersonByIdAsync([FromRoute] Guid personId, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation($"[{nameof(PersonsController)}][{nameof(GetPersonByIdAsync)} | {CorrelationId}] Initiating {nameof(GetPerson)} command...");
 
-                var result = await _mediator.Send(new GetPerson(personId, CorrelationId));
+                var result = await _mediator.Send(new GetPerson(personId, CorrelationId), cancellationToken);
 
                 if (result == null)
                 {
@@ -170,7 +173,7 @@ namespace PersonService.API.Controllers
 
                 return Ok(_mapper.Map<PersonDto>(result));
             }
-            catch (Exception ex)
+            catch (OperationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(PersonsController)}][{nameof(GetPersonByIdAsync)} | {CorrelationId}] An error occurred.");
                 return StatusCode(StatusCodes.Status500InternalServerError);
@@ -181,18 +184,19 @@ namespace PersonService.API.Controllers
         /// Gets the modified data for the provided person id
         /// </summary>
         /// <param name="personId">Person id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Modified data for the provided person id</returns>
         [HttpGet(PersonModifiedEndpoint)]
         [ProducesResponseType(typeof(ModifiedPersonDataDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ModifiedPersonDataDto>> GetModifiedPersonDataByIdAsync(Guid personId)
+        public async Task<ActionResult<ModifiedPersonDataDto>> GetModifiedPersonDataByIdAsync(Guid personId, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation($"[{nameof(PersonsController)}][{nameof(GetModifiedPersonDataByIdAsync)} | {CorrelationId}] Initiating {nameof(GetPerson)} command...");
 
-                var result = await _mediator.Send(new GetPerson(personId, CorrelationId));
+                var result = await _mediator.Send(new GetPerson(personId, CorrelationId), cancellationToken);
 
                 if (result == null)
                 {
@@ -204,7 +208,7 @@ namespace PersonService.API.Controllers
 
                 return Ok(_mapper.Map<ModifiedPersonDataDto>(result));
             }
-            catch (Exception ex)
+            catch (OperationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(PersonsController)}][{nameof(GetModifiedPersonDataByIdAsync)} | {CorrelationId}] An error occurred.");
                 return StatusCode(StatusCodes.Status500InternalServerError);

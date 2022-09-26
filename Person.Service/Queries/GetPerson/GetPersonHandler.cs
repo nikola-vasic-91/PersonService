@@ -49,11 +49,13 @@ namespace PersonService.Service.Queries
             {
                 _logger.LogInformation($"[{nameof(GetPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] Initiating database operation for {nameof(GetPerson)} command...");
 
-                return await _repository.GetByIdAsync(request.PersonId);
+                return await _repository.GetByIdAsync(request.PersonId, cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError($"[{nameof(GetPersonHandler)}][{nameof(Handle)} | {request.CorrelationId}] An error occurred while handling {nameof(GetPerson)} request.");
+                _logger.LogError($"[{nameof(GetPersonHandler)}][{nameof(Handle)}" +
+                    $"{(request != null ? $"| {request.CorrelationId}" : string.Empty)}" +
+                    $"] An error occurred while handling {nameof(GetPerson)} request.");
                 throw;
             }
         }

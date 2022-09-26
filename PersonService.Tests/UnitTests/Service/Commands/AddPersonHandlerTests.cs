@@ -35,7 +35,7 @@ namespace PersonService.Tests.UnitTests.Service.Commands
             _mediator = mediatorMock.Object;
 
             var repositoryMock = new Mock<IDataRepository<Person>>();
-            repositoryMock.Setup(x => x.AddAsync(It.IsAny<Person>()))
+            repositoryMock.Setup(x => x.AddAsync(It.IsAny<Person>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Person { PersonId = Guid.Parse(AddPersonSuccessId) });
             _repository = repositoryMock.Object;
 
@@ -71,7 +71,7 @@ namespace PersonService.Tests.UnitTests.Service.Commands
         public async Task Handle_RepositoryFail_Exception()
         {
             var repositoryMock = new Mock<IDataRepository<Person>>();
-            repositoryMock.Setup(x => x.SaveChangesAsync())
+            repositoryMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception());
 
             _handler = new AddPersonHandler(repositoryMock.Object, _mediator, _logger);

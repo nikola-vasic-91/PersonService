@@ -5,6 +5,7 @@ using PersonService.Domain.DtoModels;
 using PersonService.Domain.Queries;
 using static PersonService.API.Constants.RouteConstants;
 using PersonService.API.Helpers;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.API.Controllers
 {
@@ -60,18 +61,19 @@ namespace PersonService.API.Controllers
         /// <summary>
         /// Retrieving all social media account entities
         /// </summary>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Collection of all social media accounts entities</returns>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<SocialMediaAccountDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<SocialMediaAccountDto>> GetSocialMediaAccountsAsync()
+        public async Task<ActionResult<SocialMediaAccountDto>> GetSocialMediaAccountsAsync(CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation($"[{nameof(SocialMediaAccountsController)}][{nameof(GetSocialMediaAccountsAsync)} | {CorrelationId}] Initiating {nameof(GetSocialMediaAccounts)} command...");
 
-                var socialMediaAccountList = await _mediator.Send(new GetSocialMediaAccounts(CorrelationId));
+                var socialMediaAccountList = await _mediator.Send(new GetSocialMediaAccounts(CorrelationId), cancellationToken);
 
                 if (!socialMediaAccountList?.Any() ?? true
                 )
@@ -86,7 +88,7 @@ namespace PersonService.API.Controllers
 
                 return Ok(retVal);
             }
-            catch (Exception ex)
+            catch (OperationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(SocialMediaAccountsController)}][{nameof(GetSocialMediaAccountsAsync)} | {CorrelationId}] An error occurred.");
                 return StatusCode(StatusCodes.Status500InternalServerError);

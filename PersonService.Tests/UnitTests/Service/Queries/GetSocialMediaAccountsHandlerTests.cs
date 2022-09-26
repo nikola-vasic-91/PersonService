@@ -5,6 +5,7 @@ using PersonService.Domain.Interfaces;
 using PersonService.Domain.Models;
 using PersonService.Domain.Queries;
 using PersonService.Service.Queries;
+using PersonService.Domain.Exceptions;
 
 namespace PersonService.Tests.UnitTests.Service.Queries
 {
@@ -26,7 +27,7 @@ namespace PersonService.Tests.UnitTests.Service.Queries
             _logger = logMock.Object;
 
             var repositoryMock = new Mock<IDataRepository<SocialMediaAccount>>();
-            repositoryMock.Setup(x => x.GetAsync())
+            repositoryMock.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<SocialMediaAccount>
                 {
                     new SocialMediaAccount()
@@ -58,14 +59,14 @@ namespace PersonService.Tests.UnitTests.Service.Queries
         {
             //Arrange
             var repositoryMock = new Mock<IDataRepository<SocialMediaAccount>>();
-            repositoryMock.Setup(x => x.GetAsync())
-                .ThrowsAsync(new Exception());
+            repositoryMock.Setup(x => x.GetAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new OperationFailedException());
 
             _handler = new GetSocialMediaAccountsHandler(repositoryMock.Object, _logger);
 
             //Act
             //Assert
-            await Assert.ThrowsAsync<Exception>(async () => await _handler.Handle(new GetSocialMediaAccounts(Guid.NewGuid()), new CancellationToken()));
+            await Assert.ThrowsAsync<OperationFailedException>(async () => await _handler.Handle(new GetSocialMediaAccounts(Guid.NewGuid()), new CancellationToken()));
         }
 
         #endregion

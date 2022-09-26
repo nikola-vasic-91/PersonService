@@ -13,6 +13,10 @@ using Serilog;
 using System.Data.SqlClient;
 using System.Reflection;
 using static PersonService.Service.Modules.ServiceModule;
+using static PersonService.API.Constants.OtherConstants;
+using PersonService.Domain.Options;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,13 +31,16 @@ builder.Services.AddSwaggerGen(sg =>
         sg.OperationFilter<SwaggerXCorrelationIdFilter>();
     }
 );
+
+builder.Services.Configure<DatabaseOptions>(builder.Configuration.GetSection(nameof(DatabaseOptions)));
+builder.Services.Configure<ServiceUrls>(builder.Configuration.GetSection(nameof(ServiceUrls)));
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddScoped(typeof(IDataRepository<>), typeof(DataRepository<>));
 builder.Services.AddScoped(typeof(IDataRepository<Person>), typeof(PersonRepository));
 builder.Services.AddScoped<IValidator<PersonDto>, PersonValidator>();
-builder.Services.AddDbContext<PersonDbContext>(options =>
+builder.Services.AddDbContext<PersonDbContext>((serviceProvider, options) =>
                options.UseSqlServer(
-                    new SqlConnection(builder.Configuration["PersonDbConnectionString"])));
+                    new SqlConnection(serviceProvider.GetService<IOptions<DatabaseOptions>>()?.Value?.ConnectionString)));
 
 builder.Services.RegisterMediatR();
 
@@ -54,11 +61,11 @@ builder.Logging.AddSerilog(logger);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "CorsPolicy",
+    options.AddPolicy(name: CorsPolicyName,
                       policy =>
                       {
-                          policy.WithOrigins("http://localhost:4200")
-                          .WithHeaders("x-correlation-id", "content-type");
+                          policy.WithOrigins(builder.Services.BuildServiceProvider().GetService<IOptions<ServiceUrls>>()?.Value?.PersonPortalUrl)
+                          .WithHeaders(CorrelationIdHeaderName, ContentTypeHeaderName);
                       });
 });
 
@@ -80,7 +87,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.UseCors("CorsPolicy");
+app.UseCors(CorsPolicyName);
 
 app.MapControllers();
 
